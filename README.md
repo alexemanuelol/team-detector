@@ -24,5 +24,11 @@ When running the program, it will display the list of found potential teammates 
 
 ![Image of the network](images/network_image.png)
 
+You can download an windows executable from [releases](https://github.com/alexemanuelol/Team-Detector/releases) page and run the .exe file like so:
+
+```bash
+$ teamDetector.exe -b https://battlemetrics.com/servers/rust/XXXXX -s https://steamcommunity.com/profiles/XXXXXXXXXXXXXXXXX
+```
+
 # Notes
 The program will only find players that are currently online on the rust server that is displayed in the battlemetrics rust server page. If the server have streamer mode on, this program won't work. Also, if you try to run the script on a person that have the friendslist private, this program won't work.
