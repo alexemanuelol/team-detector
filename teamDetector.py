@@ -19,6 +19,9 @@ import argparse
 import requests
 import networkx as nx
 from pyvis.network import Network
+import config
+import json
+import datetime
 
 def main():
     parser = argparse.ArgumentParser(description=description)
@@ -28,7 +31,9 @@ def main():
 
     G = nx.Graph()
 
-    battlemetricsPlayers = get_battlemetrics_players(args.b)
+    battlemetricsPlayers = get_all_players()
+    #battlemetricsPlayers = get_online_players(args.b)
+    ## if get_online__players is used instead, there is no need for a battlemetrics api key.
 
     initialFriendList = get_friend_list(args.s)
     friends = { initialFriendList['steamId']: initialFriendList['name']}
@@ -70,19 +75,39 @@ def scrape(url):
         print(f'Could not scrape: {url}')
         return False
 
-def get_battlemetrics_players(url):
-    content = scrape(url)
-    if content == False:
-        print('Could not scrape Battlemetrics Server Page')
-        exit()
-
-    regex = r'<a class="css-zwebxb" href="/players/\d+?">(.+?)</a>'
-    players = re.findall(regex, content)
-    if len(players) == 0:
-        print('Could not match players on the Battlemetrics Server Page.')
-        exit()
-
+def get_online_players(url):
+    players = []
+    server_id = re.findall(r"(?<=https:\/\/www\.battlemetrics\.com\/servers\/rust\/)\d+", url)
+    page = requests.get(f"https://api.battlemetrics.com/servers/{server_id[0]}?include=player")
+    resp = page.json()
+    for p_info in resp["included"]:
+        players.append(p_info["attributes"]["name"])
+        
     return players
+
+def get_all_players():
+    temp_start = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(30)
+    start = temp_start.isoformat().replace("+00:00", "Z")
+    stop = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
+    
+    params = {
+        "start":start,
+        "stop":stop,
+        "include":"player",
+        "access_token": config.bm_api_key
+    }
+    
+    p_list = []
+    
+    print("Requesting data from battlemetrics, this may take a while.")
+    resp = requests.get("https://api.battlemetrics.com/servers/16636043/relationships/sessions", params=params)
+    
+    data = resp.json()
+    for session in data['data']:
+        player = session["attributes"]["name"]
+        if player not in p_list:
+            p_list.append(player)
+    return p_list
 
 def get_friend_list(url):
     if not 'friends' in url:
