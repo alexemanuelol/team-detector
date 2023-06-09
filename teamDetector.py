@@ -14,12 +14,15 @@ Profile. It will also create a .html file that visualize the friends network
 to see who is friends with who etc...
 """
 
-import re
-import argparse
-import requests
-import networkx as nx
-import json
 from pyvis.network import Network
+import argparse
+import json
+import networkx as nx
+import os
+import re
+import requests
+
+JSON_FILE = 'teamDetectorLatest.json'
 
 def request(url):
     try:
@@ -77,15 +80,39 @@ def compare_players(battlemetricsPlayers, friendList):
 
 def main():
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('-b', type=str, required=True, help='Battlemetrics Page for the Server.')
-    parser.add_argument('-s', type=str, required=True, help='Steam page of the person you want to inspect.')
+    parser.add_argument('-b', type=str, required=False, help='Battlemetrics Page for the Server.')
+    parser.add_argument('-s', type=str, required=False, help='Steam page of the person you want to inspect.')
     args = parser.parse_args()
 
     G = nx.Graph()
 
-    battlemetricsPlayers = get_battlemetrics_players(args.b)
+    battlemetrics_url = args.b
+    steam_url = args.s
 
-    initialFriendList = get_friend_list(args.s)
+    if os.path.isfile(JSON_FILE) and os.access(JSON_FILE, os.R_OK):
+        with open(JSON_FILE, 'r') as f:
+            jsonFile = json.load(f)
+            if battlemetrics_url == None:
+                if 'battlemetrics_url' not in jsonFile:
+                    print('Battlemetrics URL missing.')
+                    exit()
+                battlemetrics_url = jsonFile['battlemetrics_url']
+            if steam_url == None:
+                if 'steam_url' not in jsonFile:
+                    print('Steam URL missing.')
+                    exit()
+                steam_url = jsonFile['steam_url']
+    else:
+        with open(JSON_FILE, 'w') as f:
+            f.write(json.dumps({}))
+
+        if battlemetrics_url == None or steam_url == None:
+            print('Battlemetrics or Steam URL is missing.')
+            exit()
+
+    battlemetricsPlayers = get_battlemetrics_players(battlemetrics_url)
+
+    initialFriendList = get_friend_list(steam_url)
     friends = { initialFriendList['steamId']: initialFriendList['name']}
     leftToCheck = compare_players(battlemetricsPlayers, initialFriendList['friends'])
     for friend in leftToCheck:
@@ -116,6 +143,15 @@ def main():
 
     for steamId, name in friends.items():
         print(f'{name}'.ljust(34) + f'{steamId}'.ljust(19) + f'https://steamcommunity.com/profiles/{steamId}')
+
+    jsonFile = None
+    with open(JSON_FILE, 'r') as f:
+        jsonFile = json.load(f)
+        jsonFile['battlemetrics_url'] = battlemetrics_url
+        jsonFile['steam_url'] = steam_url
+
+    with open(JSON_FILE, 'w') as f:
+        json.dump(jsonFile, f)
 
 
 if __name__ == '__main__':
