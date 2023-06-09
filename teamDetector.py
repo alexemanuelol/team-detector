@@ -18,7 +18,62 @@ import re
 import argparse
 import requests
 import networkx as nx
+import json
 from pyvis.network import Network
+
+def request(url):
+    try:
+        page = requests.get(url)
+        return page.text
+    except:
+        print(f'Could not request: {url}')
+        return False
+
+def get_battlemetrics_players(url):
+    serverId = re.findall(r'(\d+)$', url)
+    if len(serverId) == 0:
+        print('Could not find serverId in battlemetrics URL.')
+        exit()
+    serverId = serverId[0]
+    url = f'https://api.battlemetrics.com/servers/{serverId}?include=player'
+
+    content = request(url)
+    if content == False:
+        print('Could not Request Battlemetrics Server Page.')
+        exit()
+    content = json.loads(content)
+
+    players = []
+    for player in content['included']:
+        players.append(player['attributes']['name'])
+
+    return players
+
+def get_friend_list(url):
+    if not 'friends' in url:
+        url += '/friends'
+
+    content = request(url)
+    if content == False:
+        print('Could not request friend list page')
+        exit()
+
+    regex = r'<meta property="og:title" content="(.+?)">'
+    name = re.findall(regex, content)[0]
+    regex = r',"steamid":"(.+?)",'
+    steamId = re.findall(regex, content)[0]
+    regex = r'data-steamid="(.+?)".*?<div class="friend_block_content">(.+?)<br>'
+    friends = re.findall(regex, content, re.MULTILINE|re.S)
+
+    return {"name": name, "steamId": steamId, "friends": friends}
+
+def compare_players(battlemetricsPlayers, friendList):
+    players = []
+    for steamId, name in friendList:
+        if name in battlemetricsPlayers:
+            players.append([steamId, name])
+
+    return players
 
 def main():
     parser = argparse.ArgumentParser(description=description)
@@ -61,54 +116,6 @@ def main():
 
     for steamId, name in friends.items():
         print(f'{name}'.ljust(34) + f'{steamId}'.ljust(19) + f'https://steamcommunity.com/profiles/{steamId}')
-
-def scrape(url):
-    try:
-        page = requests.get(url)
-        return page.text
-    except:
-        print(f'Could not scrape: {url}')
-        return False
-
-def get_battlemetrics_players(url):
-    content = scrape(url)
-    if content == False:
-        print('Could not scrape Battlemetrics Server Page')
-        exit()
-
-    regex = r'<a class="css-zwebxb" href="/players/\d+?">(.+?)</a>'
-    players = re.findall(regex, content)
-    if len(players) == 0:
-        print('Could not match players on the Battlemetrics Server Page.')
-        exit()
-
-    return players
-
-def get_friend_list(url):
-    if not 'friends' in url:
-        url += '/friends'
-
-    content = scrape(url)
-    if content == False:
-        print('Could not scrape friend list page')
-        exit()
-
-    regex = r'<meta property="og:title" content="(.+?)">'
-    name = re.findall(regex, content)[0]
-    regex = r',"steamid":"(.+?)",'
-    steamId = re.findall(regex, content)[0]
-    regex = r'data-steamid="(.+?)".*?<div class="friend_block_content">(.+?)<br>'
-    friends = re.findall(regex, content, re.MULTILINE|re.S)
-
-    return {"name": name, "steamId": steamId, "friends": friends}
-
-def compare_players(battlemetricsPlayers, friendList):
-    players = []
-    for steamId, name in friendList:
-        if name in battlemetricsPlayers:
-            players.append([steamId, name])
-
-    return players
 
 
 if __name__ == '__main__':
