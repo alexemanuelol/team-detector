@@ -2,8 +2,12 @@
 A program that detect teams on games available at Battlemetrics and Steam by comparing names in Battlemetrics player list and suspect friend list.
 
 # Clone and Setup
+**Tested with Python version: 3.11.4**
+<br>
 To clone the repository:
-	$ git clone https://github.com/alexemanuelol/team-detector.git
+```bash
+$ git clone https://github.com/alexemanuelol/team-detector.git
+```
 
 Install the required packages:
 ``` bash
