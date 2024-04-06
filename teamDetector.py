@@ -136,7 +136,7 @@ def main():
     nt = Network('2000px', '2000px')
     nt.from_nx(G)
     nt.repulsion(damping=1)
-    nt.show('team_network.html')
+    nt.show('team_network.html', notebook=False)
 
     print('Team Detector Result:\n')
     print('Name:'.ljust(34) + 'SteamID:'.ljust(19) + 'Link:')
