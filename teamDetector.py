@@ -503,6 +503,7 @@ class TeamDetector:
         battlemetrics_players = self.get_battlemetrics_players(server_id)
         found_players = []
         searched_steam_ids = []
+        recursives = 0
 
         def recursive_search(profile_steam_id: str):
             """
@@ -511,11 +512,14 @@ class TeamDetector:
             Args:
                 profile_steam_id (str): The Steam ID of the profile to start the search from.
             """
+            nonlocal recursives
             self.__print(f'start_search:recursive_search(profile_steam_id:{profile_steam_id})')
 
             if profile_steam_id in searched_steam_ids:
                 self.__print(f'start_search:recursive_search(profile_steam_id:{profile_steam_id}) -> Already searched')
                 return []
+
+            recursives += 1
 
             searched_steam_ids.append(profile_steam_id)
             people = []
@@ -560,8 +564,15 @@ class TeamDetector:
                     steam_id = self.get_steam_profile_steam_id_by_custom_id(item['custom_id'])
                 recursive_search(steam_id)
 
+            if recursives == 1:
+                recursives = 0
+                G.add_node(profile_name)
+
         for id in steam_ids:
             recursive_search(id)
+
+        # TODO! Go through all found_players and look at their friendslists and see if we can make more connections
+        # This is usually something that needs to be done when several steamids are provided.
 
         print('\nTeam Detector Network written to:')
 
