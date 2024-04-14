@@ -128,5 +128,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-teamDetectorLatest.json
+team_detector.json
 team_network.html
