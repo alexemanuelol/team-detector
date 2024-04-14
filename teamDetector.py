@@ -142,6 +142,16 @@ class TeamDetector:
         return f'https://steamcommunity.com/id/{custom_id}/allcomments/?l=english&ctp={page}'
 
 
+    def __print(self, text: str):
+        """
+        Print the provided text if debug mode is enabled.
+
+        Args:
+            text (str): The text to be printed.
+        """
+        if self.debug: print(text)
+
+
     def __request(self, url: str) -> str:
         """
         Make a GET request to the specified URL and return the response text.
@@ -160,6 +170,7 @@ class TeamDetector:
             raise ValueError(f'URL cannot be empty or None. URL: {url}')
 
         try:
+            self.__print(f'Requesting: {url}')
             response = requests.get(url)
             response.raise_for_status()  # Raises an HTTPError if the response status is not successful
             return response.text
@@ -178,7 +189,9 @@ class TeamDetector:
         Returns:
             bool: True if the profile is cached, False otherwise.
         """
-        return True if steam_id in self.steam_profiles else False
+        value = True if steam_id in self.steam_profiles else False
+        self.__print(f'__is_steam_profile_cached_by_steam_id(steam_id:{steam_id}) -> bool:{value}')
+        return value
 
 
     def __is_steam_profile_cached_by_custom_id(self, custom_id: str) -> bool:
@@ -193,8 +206,10 @@ class TeamDetector:
         """
         if custom_id in self.custom_id_translation_table:
             if self.custom_id_translation_table[custom_id] in self.steam_profiles:
+                self.__print(f'__is_steam_profile_cached_by_custom_id(custom_id:{custom_id}) -> bool:{True}')
                 return True
 
+        self.__print(f'__is_steam_profile_cached_by_custom_id(custom_id:{custom_id}) -> bool:{False}')
         return False
 
 
@@ -208,7 +223,9 @@ class TeamDetector:
         Returns:
             bool: True if the profile friends list is cached, False otherwise.
         """
-        return True if steam_id in self.steam_profiles_friends else False
+        value = True if steam_id in self.steam_profiles_friends else False
+        self.__print(f'__is_steam_profile_friends_cached_by_steam_id(steam_id:{steam_id}) -> bool:{value}')
+        return value
 
 
     def __get_steam_profile_content_by_steam_id(self, steam_id: str) -> str:
@@ -225,6 +242,8 @@ class TeamDetector:
             str: The content of the Steam profile page.
         """
         try:
+            self.__print(f'__get_steam_profile_content_by_steam_id(steam_id:{steam_id})')
+
             content = None
             if self.__is_steam_profile_cached_by_steam_id(steam_id):
                 content = self.steam_profiles[steam_id]
@@ -253,6 +272,8 @@ class TeamDetector:
             str: The content of the Steam profile page.
         """
         try:
+            self.__print(f'__get_steam_profile_content_by_custom_id(custom_id:{custom_id})')
+
             content = None
             if self.__is_steam_profile_cached_by_custom_id(custom_id):
                 content = self.steam_profiles[self.custom_id_translation_table[custom_id]]
@@ -284,6 +305,8 @@ class TeamDetector:
             str: The content of the Steam profile friends page.
         """
         try:
+            self.__print(f'__get_steam_profile_friends_content_by_steam_id(steam_id:{steam_id})')
+
             content = None
             if self.__is_steam_profile_friends_cached_by_steam_id(steam_id):
                 content = self.steam_profiles_friends[steam_id]
@@ -310,7 +333,9 @@ class TeamDetector:
             str: The content of the specified page of comments on the Steam profile.
         """
         try:
-            content = self.__request(self.__get_url_steam_profile_comments_page_by_steam_id(steam_id))
+            self.__print(f'__get_steam_profile_comments_page_content_by_steam_id(steam_id:{steam_id}, page:{page})')
+
+            content = self.__request(self.__get_url_steam_profile_comments_page_by_steam_id(steam_id, page))
             if content == '': exit()
 
             return content
@@ -330,10 +355,10 @@ class TeamDetector:
         """
         regex = r',"steamid":"(.*?)",'
         steam_id = re.findall(regex, steam_profile_content, re.MULTILINE|re.S)
-        if len(steam_id) == 0:
-            return ''
-        else:
-            return steam_id[0]
+        steam_id = '' if len(steam_id) == 0 else steam_id[0]
+
+        self.__print(f'__get_steam_profile_steam_id_by_content(content) -> steam_id:{steam_id}')
+        return steam_id
 
 
     def __get_steam_profile_custom_id_by_content(self, steam_profile_content: str) -> str:
@@ -348,10 +373,10 @@ class TeamDetector:
         """
         regex = r'g_rgProfileData = {"url":"https:\/\/steamcommunity.com\/id\/(.*)\/'
         custom_id = re.findall(regex, steam_profile_content, re.MULTILINE|re.S)
-        if len(custom_id) == 0:
-            return ''
-        else:
-            return custom_id[0]
+        custom_id = '' if len(custom_id) == 0 else custom_id[0]
+
+        self.__print(f'__get_steam_profile_custom_id_by_content(content) -> custom_id:{custom_id}')
+        return custom_id
 
 
     def __remove_duplicates(self, people: list) -> list:
@@ -379,6 +404,7 @@ class TeamDetector:
             if not exist:
                 temp.append(item)
 
+        self.__print(f'__remove_duplicates(List[people:{len(people)}]) -> List[temp:{len(temp)}]')
         return temp
 
 
@@ -400,6 +426,8 @@ class TeamDetector:
                 continue
             temp.append(item)
 
+        self.__print(f'__remove_self_from_people(profile_steam_id:{profile_steam_id}, profile_custom_id:' +
+                     f'{profile_custom_id}, List[people:{len(people)}]) -> List[temp:{len(temp)}]')
         return temp
 
 
@@ -419,6 +447,8 @@ class TeamDetector:
             if item['name'] in battlemetrics_players:
                 temp.append(item)
 
+        self.__print(f'__compare_people_to_battlemetrics_players(List[people:{len(people)}], ' +
+                     f'List[battlemetrics_players:{len(battlemetrics_players)}]) -> List[temp:{len(temp)}]')
         return temp
 
 
@@ -449,8 +479,9 @@ class TeamDetector:
             if not exist:
                 temp.append(item)
 
+        self.__print(f'__compare_people_to_already_found_players(List[people:{len(people)}], ' +
+                     f'List[found_players:{len(found_players)}]) -> List[temp:{len(temp)}]')
         return temp
-
 
 
     ##################################################
@@ -465,6 +496,8 @@ class TeamDetector:
             server_id (str): The ID of the server.
             steam_ids (list): A list of Steam IDs to start the search from.
         """
+        self.__print(f'start_search(server_id:{server_id}, steam_ids:{len(steam_ids)})')
+
         G = nx.Graph()
 
         battlemetrics_players = self.get_battlemetrics_players(server_id)
@@ -478,7 +511,10 @@ class TeamDetector:
             Args:
                 profile_steam_id (str): The Steam ID of the profile to start the search from.
             """
+            self.__print(f'start_search:recursive_search(profile_steam_id:{profile_steam_id})')
+
             if profile_steam_id in searched_steam_ids:
+                self.__print(f'start_search:recursive_search(profile_steam_id:{profile_steam_id}) -> Already searched')
                 return []
 
             searched_steam_ids.append(profile_steam_id)
@@ -527,12 +563,14 @@ class TeamDetector:
         for id in steam_ids:
             recursive_search(id)
 
+        print('\nTeam Detector Network written to:')
+
         nt = Network('2000px', '2000px')
         nt.from_nx(G)
         nt.repulsion(damping=1)
         nt.show('team_network.html', notebook=False)
 
-        print('Team Detector Result:\n')
+        print('\nTeam Detector Result:\n')
         print('Name:'.ljust(34) + 'SteamID:'.ljust(19) + 'Link:')
 
         for player in found_players:
@@ -551,6 +589,8 @@ class TeamDetector:
             list: A list of player names currently connected to the server.
         """
         try:
+            self.__print(f'get_battlemetrics_players(server_id:{server_id})')
+
             content = self.__request(self.__get_url_battlemetrics(server_id))
             if content == '': exit()
             content = json.loads(content)
@@ -559,6 +599,7 @@ class TeamDetector:
             for player in content['included']:
                 players.append(player['attributes']['name'])
 
+            self.__print(f'get_battlemetrics_players(server_id:{server_id}) -> List[players:{len(players)}]')
             return players
         except Exception as e:
             sys.exit(e)
@@ -574,11 +615,18 @@ class TeamDetector:
         Returns:
             str: The Steam ID associated with the Custom ID.
         """
+        self.__print(f'get_steam_profile_steam_id_by_custom_id(custom_id:{custom_id})')
+
         if custom_id in self.custom_id_translation_table:
-            return self.custom_id_translation_table[custom_id]
+            steam_id = self.custom_id_translation_table[custom_id]
+            self.__print(f'get_steam_profile_steam_id_by_custom_id(custom_id:{custom_id}) -> steam_id:{steam_id}')
+            return steam_id
 
         content = self.__get_steam_profile_content_by_custom_id(custom_id)
-        return self.__get_steam_profile_steam_id_by_content(content)
+        steam_id = self.__get_steam_profile_steam_id_by_content(content)
+
+        self.__print(f'get_steam_profile_steam_id_by_custom_id(custom_id:{custom_id}) -> steam_id:{steam_id}')
+        return steam_id
 
 
     def get_steam_profile_custom_id_by_steam_id(self, steam_id: str) -> str:
@@ -591,12 +639,17 @@ class TeamDetector:
         Returns:
             str: The Custom ID associated with the Steam ID.
         """
+        self.__print(f'get_steam_profile_custom_id_by_steam_id(steam_id:{steam_id})')
+
         for key, value in self.custom_id_translation_table.items():
             if steam_id == value:
+                self.__print(f'get_steam_profile_custom_id_by_steam_id(steam_id:{steam_id}) -> custom_id:{key}')
                 return key
 
         content = self.__get_steam_profile_content_by_steam_id(steam_id)
-        return self.__get_steam_profile_custom_id_by_content(content)
+        custom_id = self.__get_steam_profile_custom_id_by_content(content)
+        self.__print(f'get_steam_profile_custom_id_by_steam_id(steam_id:{steam_id}) -> custom_id:{custom_id}')
+        return custom_id
 
 
     def get_steam_profile_name(self, steam_id: str) -> str:
@@ -609,13 +662,14 @@ class TeamDetector:
         Returns:
             str: The name of the Steam profile.
         """
+        self.__print(f'get_steam_profile_name(steam_id:{steam_id})')
+
         content = self.__get_steam_profile_content_by_steam_id(steam_id)
         regex = r'<div class="persona_name" style="font-size: 24px;">.*?<span class="actual_persona_name">(.*?)<\/span>'
         name = re.findall(regex, content, re.MULTILINE|re.S)
-        if len(name) == 0:
-            return ''
-        else:
-            return name[0]
+        name = '' if len(name) == 0 else name[0]
+        self.__print(f'get_steam_profile_name(steam_id:{steam_id}) -> name:{name}')
+        return name
 
 
     def is_steam_profile_friends_public(self, steam_id: str) -> bool:
@@ -628,9 +682,13 @@ class TeamDetector:
         Returns:
             bool: True if the friends list is public, False otherwise.
         """
+        self.__print(f'is_steam_profile_friends_public(steam_id:{steam_id})')
+
         content = self.__get_steam_profile_content_by_steam_id(steam_id)
         content_no_space = re.sub(r'\s+', '', content)
-        return '/friends/"><spanclass="count_link_label">friends</span>' in content_no_space.lower()
+        value = '/friends/"><spanclass="count_link_label">friends</span>' in content_no_space.lower()
+        self.__print(f'is_steam_profile_friends_public(steam_id:{steam_id}) -> bool:{value}')
+        return value
 
 
     def is_steam_profile_comments_public(self, steam_id: str) -> bool:
@@ -643,9 +701,13 @@ class TeamDetector:
         Returns:
             bool: True if the comments section is public, False otherwise.
         """
+        self.__print(f'is_steam_profile_comments_public(steam_id:{steam_id})')
+
         content = self.__get_steam_profile_content_by_steam_id(steam_id)
         content_no_space = re.sub(r'\s+', '', content)
-        return '<spanclass="commentthread_header_label">comments</span>' in content_no_space.lower()
+        value = '<spanclass="commentthread_header_label">comments</span>' in content_no_space.lower()
+        self.__print(f'is_steam_profile_comments_public(steam_id:{steam_id}) -> bool:{value}')
+        return value
 
 
     def get_number_of_comments(self, steam_id: str) -> int:
@@ -658,7 +720,10 @@ class TeamDetector:
         Returns:
             int: The number of comments on the Steam profile.
         """
+        self.__print(f'get_number_of_comments(steam_id:{steam_id})')
+
         if not self.is_steam_profile_comments_public(steam_id):
+            self.__print(f'get_number_of_comments(steam_id:{steam_id}) -> int:0')
             return 0
 
         content = self.__get_steam_profile_content_by_steam_id(steam_id)
@@ -666,11 +731,11 @@ class TeamDetector:
         matches = re.findall(r'<spanid="commentthread_profile_\d+_totalcount">(.*?)<\/span>', content_no_space.lower())
 
         try:
-            if len(matches) == 0:
-                return 0
-            else:
-                return int(re.sub(r'[^0-9]', '', matches[0]))
+            number = 0 if len(matches) == 0 else int(re.sub(r'[^0-9]', '', matches[0]))
+            self.__print(f'get_number_of_comments(steam_id:{steam_id}) -> int:{number}')
+            return number
         except Exception as e:
+            self.__print(f'get_number_of_comments(steam_id:{steam_id}) -> int:0')
             return 0
 
 
@@ -685,6 +750,8 @@ class TeamDetector:
             list: A list of dictionaries containing friend information such as steam_id, custom_id, name and type
             ('friends'/'comments').
         """
+        self.__print(f'get_steam_profile_friends(steam_id:{steam_id})')
+
         content = self.__get_steam_profile_friends_content_by_steam_id(steam_id)
         regex = r'data-steamid="(.+?)".*?href="https:\/\/steamcommunity.com\/(.+?)">.*?' + \
                 r'<div class="friend_block_content">(.+?)<br>'
@@ -704,6 +771,7 @@ class TeamDetector:
             friend['type'] = 'friends'
             friends.append(friend)
 
+        self.__print(f'get_steam_profile_friends(steam_id:{steam_id}) -> List[friends:{len(friends)}]')
         return friends
 
 
@@ -719,6 +787,8 @@ class TeamDetector:
             tuple: A tuple containing the total number of comments read and a list of dictionaries containing comment
             author information such as steam_id, custom_id, name, and type ('comments' or 'friends').
         """
+        self.__print(f'get_steam_profile_comments_page_authors(steam_id:{steam_id}, page:{page})')
+
         content = self.__get_steam_profile_comments_page_content_by_steam_id(steam_id, page)
 
         regex = r'hoverunderline commentthread_author_link" ' \
@@ -754,6 +824,9 @@ class TeamDetector:
             author['type'] = 'comments'
             comments_page_authors.append(author)
 
+        self.__print(f'get_steam_profile_comments_page_authors(steam_id:{steam_id}, page:{page}) -> ' +
+                     f'total_read_comments:{total_read_comments}, List[comments_page_authors:' +
+                     f'{len(comments_page_authors)}]')
         return total_read_comments, comments_page_authors
 
 
@@ -799,7 +872,7 @@ def main():
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('-b', '--battlemetrics-id', type=str, required=False, help='BattleMetrics Server ID.')
     parser.add_argument('-s', '--steam-id', type=str, nargs='+', required=False,
-                        help='SteamID of the person(s) you want to inspect (Separated by space).')
+                        help='SteamID(s) of the person(s) you want to inspect (Separated by space).')
     parser.add_argument('-c', '--comments', action='store_true', required=False,
                         help='Search through profile comments.')
     parser.add_argument('-p', '--comment-pages', type=int, required=False,
@@ -822,6 +895,15 @@ def main():
 
     if battlemetrics_id == None or steam_id == None:
         sys.exit('BattleMetrics Server ID or Steam ID is not provided.')
+
+    if debug:
+        print('Running with the following arguments:')
+        print(f' - Battlemetrics Server ID:     {battlemetrics_id}')
+        print(f' - Steam ID(s):                 {steam_id}')
+        print(f' - Comments:                    {comments}')
+        print(f' - Comment Pages:               {comment_pages}')
+        print(f' - Debug:                       {debug}')
+        print()
 
     td = TeamDetector(debug, comments, comment_pages)
     td.start_search(battlemetrics_id, steam_id)
