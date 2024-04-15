@@ -504,6 +504,7 @@ class TeamDetector:
         found_players = []
         searched_steam_ids = []
         recursives = 0
+        peoples_connections = dict()
 
         def recursive_search(profile_steam_id: str):
             """
@@ -547,6 +548,8 @@ class TeamDetector:
                     number_of_comments -= number_of_page_comments
                     people += authors
 
+            peoples_connections[profile_steam_id] = (profile_name, profile_custom_id, people)
+
             people = self.__remove_duplicates(people)
             people = self.__remove_self_from_people(profile_steam_id, profile_custom_id, people)
 
@@ -565,14 +568,24 @@ class TeamDetector:
                 recursive_search(steam_id)
 
             if recursives == 1:
-                recursives = 0
                 G.add_node(profile_name)
 
         for id in steam_ids:
             recursive_search(id)
+            recursives = 0
 
-        # TODO! Go through all found_players and look at their friendslists and see if we can make more connections
-        # This is usually something that needs to be done when several steamids are provided.
+        for steam_id_outer, (name_outer, custom_id_outer, connections_outer) in peoples_connections.items():
+            for steam_id_inner, (name_inner, custom_id_inner, connections_inner) in peoples_connections.items():
+                if steam_id_outer == steam_id_inner : continue
+                if custom_id_outer != '' and custom_id_outer == custom_id_inner: continue
+
+                steam_id_in_connections = any(steam_id_outer == connection['steam_id'] for connection in
+                                              connections_inner)
+                custom_id_in_connections = any(custom_id_outer != '' and custom_id_outer == connection['custom_id']
+                                               for connection in connections_inner)
+
+                if steam_id_in_connections or custom_id_in_connections:
+                    G.add_edges_from([(name_outer, name_inner)])
 
         print('\nTeam Detector Network written to:')
 
