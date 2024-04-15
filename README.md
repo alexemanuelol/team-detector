@@ -19,14 +19,15 @@ $ pip install -r requirements.txt
 
 # Usage
 
-| Argument                  | Description                                                               |
-|---------------------------|---------------------------------------------------------------------------|
-| -h, --help                | Display help message.                                                     |
-| -b, --battlemetrics-id ID | BattleMetrics Server ID.                                                  |
-| -s, --steam-id ID         | SteamID(s) of the person(s) you want to inspect (Separated by space).     |
-| -c, --comments            | Search through profile comments (Default False).                          |
-| -p, --comment-pages PAGES | The number of comment pages to go through per profile (Default 1 page).   |
-| -d, --debug               | Enables debug print (Default False).                                      |
+| Argument                      | Description                                                               |
+|-------------------------------|---------------------------------------------------------------------------|
+| -h, --help                    | Display help message.                                                     |
+| -b, --battlemetrics-id ID     | BattleMetrics Server ID.                                                  |
+| -s, --steam-id ID             | SteamID(s) of the person(s) you want to inspect (Separated by space).     |
+| -r, --recursive-depth NUMBER  | How deep can the recursive search go? (Default 5)                         |
+| -c, --comments                | Search through profile comments (Default False).                          |
+| -p, --comment-pages PAGES     | The number of comment pages to go through per profile (Default 1 page).   |
+| -d, --debug                   | Enables debug print (Default False).                                      |
 
 <br>
 When you run the program once, the Battlemetrics Server ID and SteamID will be saved in team_detector.json. That means that next time you want to run the program, if you don't provide the -s or -b flags, the values in the json file will be used.

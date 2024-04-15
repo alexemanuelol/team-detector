@@ -22,19 +22,24 @@ import requests
 import sys
 
 JSON_FILE = 'team_detector.json'
+RECURSIVE_DEPTH = 5
+COMMENT_PAGES = 1
 
 class TeamDetector:
 
-    def __init__(self, debug: bool = False, search_comments: bool = False, search_comments_max_pages: int = 1):
+    def __init__(self, debug: bool = False, recursive_depth: int = 5, search_comments: bool = False,
+                 search_comments_max_pages: int = 1):
         """
         Initializes the TeamDetector instance.
 
         Args:
             debug (bool): Whether to enable debug mode.
+            recursive_depth (int): How deep can the recursive search go?
             search_comments (bool): Whether to search for comments on Steam profiles.
             search_comments_max_pages (int): Maximum number of pages to search for comments.
         """
         self.debug = debug
+        self.recursive_depth = recursive_depth
         self.search_comments = search_comments
         self.search_comments_max_pages = search_comments_max_pages
 
@@ -506,19 +511,25 @@ class TeamDetector:
         recursives = 0
         peoples_connections = dict()
 
-        def recursive_search(profile_steam_id: str):
+        def recursive_search(profile_steam_id: str, recursive_depth: int = 0):
             """
             Recursively searches for interconnected Steam profiles.
 
             Args:
                 profile_steam_id (str): The Steam ID of the profile to start the search from.
+                recursive_depth (int): The current recursive depth.
             """
+            if recursive_depth == self.recursive_depth:
+                return
+
             nonlocal recursives
-            self.__print(f'start_search:recursive_search(profile_steam_id:{profile_steam_id})')
+            self.__print(f'start_search:recursive_search(profile_steam_id:{profile_steam_id}, ' +
+                         f'recursive_depth:{recursive_depth})')
 
             if profile_steam_id in searched_steam_ids:
-                self.__print(f'start_search:recursive_search(profile_steam_id:{profile_steam_id}) -> Already searched')
-                return []
+                self.__print(f'start_search:recursive_search(profile_steam_id:{profile_steam_id}, ' +
+                             f'recursive_depth:{recursive_depth}) -> Already searched')
+                return
 
             recursives += 1
 
@@ -565,7 +576,7 @@ class TeamDetector:
                 steam_id = item['steam_id']
                 if steam_id == None:
                     steam_id = self.get_steam_profile_steam_id_by_custom_id(item['custom_id'])
-                recursive_search(steam_id)
+                recursive_search(steam_id, recursive_depth + 1)
 
             if recursives == 1:
                 G.add_node(profile_name)
@@ -897,6 +908,8 @@ def main():
     parser.add_argument('-b', '--battlemetrics-id', type=str, required=False, help='BattleMetrics Server ID.')
     parser.add_argument('-s', '--steam-id', type=str, nargs='+', required=False,
                         help='SteamID(s) of the person(s) you want to inspect (Separated by space).')
+    parser.add_argument('-r', '--recursive-depth', type=int, required=False,
+                        help=f'How deep can the recursive search go? (Default {RECURSIVE_DEPTH}).')
     parser.add_argument('-c', '--comments', action='store_true', required=False,
                         help='Search through profile comments.')
     parser.add_argument('-p', '--comment-pages', type=int, required=False,
@@ -906,8 +919,9 @@ def main():
 
     battlemetrics_id = args.battlemetrics_id
     steam_id = args.steam_id
+    recursive_depth = RECURSIVE_DEPTH if args.recursive_depth == None else args.recursive_depth
     comments = args.comments
-    comment_pages = 1 if args.comment_pages == None else args.comment_pages
+    comment_pages = COMMENT_PAGES if args.comment_pages == None else args.comment_pages
     debug = args.debug
 
     config_battlemetrics_id, config_steam_id = read_config()
@@ -924,12 +938,13 @@ def main():
         print('Running with the following arguments:')
         print(f' - Battlemetrics Server ID:     {battlemetrics_id}')
         print(f' - Steam ID(s):                 {steam_id}')
+        print(f' - Recursive Depth:             {recursive_depth}')
         print(f' - Comments:                    {comments}')
         print(f' - Comment Pages:               {comment_pages}')
         print(f' - Debug:                       {debug}')
         print()
 
-    td = TeamDetector(debug, comments, comment_pages)
+    td = TeamDetector(debug, recursive_depth, comments, comment_pages)
     td.start_search(battlemetrics_id, steam_id)
 
     write_config(battlemetrics_id, steam_id)
