@@ -39,7 +39,7 @@ When you run the program once, the Battlemetrics Server ID and SteamID will be s
 You can download the windows executable from [releases](https://github.com/alexemanuelol/team-detector/releases) page and run the .exe file like so:
 
 ```bash
-$ teamDetector.exe -b 11378166 -s 76561198114074446
+$ team_detector.exe -b 11378166 -s 76561198114074446
 ```
 
 # Notes
