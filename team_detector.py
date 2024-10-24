@@ -615,7 +615,7 @@ class TeamDetector:
         print('Name:'.ljust(34) + 'SteamID:'.ljust(19) + 'Link:')
 
         for player in found_players:
-            print(f'{player['name']}'.ljust(34) + f'{player['steam_id']}'.ljust(19) +
+            print(f'{player["name"]}'.ljust(34) + f'{player["steam_id"]}'.ljust(19) +
                   self.__get_url_steam_profile_by_steam_id(player['steam_id']))
 
 
