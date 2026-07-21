@@ -12,6 +12,7 @@ friends network to see who is friends with who etc...
 """
 
 from pyvis.network import Network
+from bs4 import BeautifulSoup
 
 import argparse
 import json
@@ -54,15 +55,15 @@ class TeamDetector:
 
     def __get_url_battlemetrics(self, server_id: str) -> str:
         """
-        Generate the URL for retrieving information about a server from the BattleMetrics API.
+        Generate the URL for retrieving information about a server from the BattleMetrics site.
 
         Args:
             server_id (str): The ID of the server to retrieve information for.
 
         Returns:
-            str: The URL for retrieving server information from the BattleMetrics API.
+            str: The URL for retrieving server information from the BattleMetrics site.
         """
-        return f'https://api.battlemetrics.com/servers/{server_id}?include=player'
+        return f'https://www.battlemetrics.com/servers/rust/{server_id}'
 
 
     def __get_url_steam_profile_by_steam_id(self, steam_id: str) -> str:
@@ -615,7 +616,7 @@ class TeamDetector:
 
     def get_battlemetrics_players(self, server_id: str) -> list:
         """
-        Retrieve a list of players currently connected to a server from the BattleMetrics API.
+        Retrieve a list of players currently connected to a server from the BattleMetrics site.
 
         Args:
             server_id (str): The ID of the server to retrieve player information for.
@@ -628,11 +629,14 @@ class TeamDetector:
 
             content = self.__request(self.__get_url_battlemetrics(server_id))
             if content == '': exit()
-            content = json.loads(content)
 
+            soup = BeautifulSoup(content, "html.parser")
+            table = soup.select_one('table[data-testid="active-players"]')
             players = []
-            for player in content['included']:
-                players.append(player['attributes']['name'])
+            for row in table.select("tbody tr"):
+                link = row.select_one("a")
+                if link:  # skip spacer rows that have no <a>
+                    players.append(link.get_text(strip=True))
 
             self.__print(f'get_battlemetrics_players(server_id:{server_id}) -> List[players:{len(players)}]')
             return players
