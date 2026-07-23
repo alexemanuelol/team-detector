@@ -605,10 +605,14 @@ class TeamDetector:
                 if steam_id_in_connections or custom_id_in_connections:
                     G.add_edges_from([(name_outer, name_inner)])
 
+        node_colors = { node: ('green' if node in battlemetrics_players else 'red') for node in G.nodes() }
+        nx.set_node_attributes(G, node_colors, 'color')
+
         print('\nTeam Detector Network written to:')
 
         nt = Network('2000px', '2000px')
         nt.from_nx(G)
+        nt.options.edges.inherit_colors(False)
         nt.repulsion(damping=1)
         nt.show('team_network.html', notebook=False)
 
