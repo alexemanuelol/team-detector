@@ -26,6 +26,11 @@ JSON_FILE = 'team_detector.json'
 RECURSIVE_DEPTH = 5
 COMMENT_PAGES = 1
 
+HEADERS = {
+    'User-Agent': 'curl/8.11.0',
+    'Accept': '*/*',
+}
+
 class TeamDetector:
 
     def __init__(self, debug: bool = False, recursive_depth: int = 5, search_comments: bool = False,
@@ -177,7 +182,7 @@ class TeamDetector:
 
         try:
             self.__print(f'Requesting: {url}')
-            response = requests.get(url)
+            response = requests.get(url, headers=HEADERS)
             response.raise_for_status()  # Raises an HTTPError if the response status is not successful
             return response.text
         except requests.exceptions.RequestException as e:
