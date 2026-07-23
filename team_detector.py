@@ -21,10 +21,12 @@ import os
 import re
 import requests
 import sys
+import time
 
 JSON_FILE = 'team_detector.json'
 RECURSIVE_DEPTH = 5
 COMMENT_PAGES = 1
+REQUEST_DELAY = 0.5
 
 HEADERS = {
     'User-Agent': 'curl/8.11.0',
@@ -33,7 +35,7 @@ HEADERS = {
 
 class TeamDetector:
 
-    def __init__(self, debug: bool = False, recursive_depth: int = 5, search_comments: bool = False,
+    def __init__(self, debug: bool = False, request_delay: float = REQUEST_DELAY, recursive_depth: int = 5, search_comments: bool = False,
                  search_comments_max_pages: int = 1):
         """
         Initializes the TeamDetector instance.
@@ -45,6 +47,7 @@ class TeamDetector:
             search_comments_max_pages (int): Maximum number of pages to search for comments.
         """
         self.debug = debug
+        self.request_delay = request_delay
         self.recursive_depth = recursive_depth
         self.search_comments = search_comments
         self.search_comments_max_pages = search_comments_max_pages
@@ -52,6 +55,8 @@ class TeamDetector:
         self.steam_profiles = dict()                    # steam_id as key and steam profile content as value
         self.steam_profiles_friends = dict()            # steam_id as key and steam friends list as value
         self.custom_id_translation_table = dict()       # custom_id as key and steam_id as value
+
+        self.is_first_request = True
 
 
     ##################################################
@@ -182,7 +187,10 @@ class TeamDetector:
 
         try:
             self.__print(f'Requesting: {url}')
+            if not self.is_first_request:
+                time.sleep(self.request_delay)
             response = requests.get(url, headers=HEADERS)
+            self.is_first_request = False
             response.raise_for_status()  # Raises an HTTPError if the response status is not successful
             return response.text
         except requests.exceptions.RequestException as e:
@@ -922,17 +930,20 @@ def main():
     parser.add_argument('-b', '--battlemetrics-id', type=str, required=False, help='BattleMetrics Server ID.')
     parser.add_argument('-s', '--steam-id', type=str, nargs='+', required=False,
                         help='SteamID(s) of the person(s) you want to inspect (Separated by space).')
+    parser.add_argument('-d', '--request-delay', type=float, required=False,
+                        help=f'Delay between requests in seconds. (Default {REQUEST_DELAY}s).')
     parser.add_argument('-r', '--recursive-depth', type=int, required=False,
                         help=f'How deep can the recursive search go? (Default {RECURSIVE_DEPTH}).')
     parser.add_argument('-c', '--comments', action='store_true', required=False,
                         help='Search through profile comments.')
     parser.add_argument('-p', '--comment-pages', type=int, required=False,
                         help='The number of comment pages to go through per profile (Default 1 page).')
-    parser.add_argument('-d', '--debug', action='store_true', required=False, help='Enables debug print.')
+    parser.add_argument('--debug', action='store_true', required=False, help='Enables debug print.')
     args = parser.parse_args()
 
     battlemetrics_id = args.battlemetrics_id
     steam_id = args.steam_id
+    request_delay = REQUEST_DELAY if args.request_delay == None else args.request_delay
     recursive_depth = RECURSIVE_DEPTH if args.recursive_depth == None else args.recursive_depth
     comments = args.comments
     comment_pages = COMMENT_PAGES if args.comment_pages == None else args.comment_pages
@@ -952,13 +963,14 @@ def main():
         print('Running with the following arguments:')
         print(f' - Battlemetrics Server ID:     {battlemetrics_id}')
         print(f' - Steam ID(s):                 {steam_id}')
+        print(f' - Request Delay (seconds):     {request_delay}')
         print(f' - Recursive Depth:             {recursive_depth}')
         print(f' - Comments:                    {comments}')
         print(f' - Comment Pages:               {comment_pages}')
         print(f' - Debug:                       {debug}')
         print()
 
-    td = TeamDetector(debug, recursive_depth, comments, comment_pages)
+    td = TeamDetector(debug, request_delay, recursive_depth, comments, comment_pages)
     td.start_search(battlemetrics_id, steam_id)
 
     write_config(battlemetrics_id, steam_id)
