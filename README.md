@@ -8,7 +8,7 @@ part of the same team as the player you provided the Steam Profile. It will also
 friends network to see who is friends with who etc...
 
 # Clone and Setup
-**Tested with Python version: 3.12.1**
+**Tested with Python version: 3.14.0**
 <br>
 To clone and setup the repository:
 ```bash
