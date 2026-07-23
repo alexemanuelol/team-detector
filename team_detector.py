@@ -548,7 +548,8 @@ class TeamDetector:
             found_players.append({
                 'steam_id': profile_steam_id,
                 'custom_id': profile_custom_id,
-                'name': profile_name
+                'name': profile_name,
+                'status': 'ONLINE' if profile_name in battlemetrics_players else 'OFFLINE',
             })
 
             # Append friends list to people
@@ -612,10 +613,10 @@ class TeamDetector:
         nt.show('team_network.html', notebook=False)
 
         print('\nTeam Detector Result:\n')
-        print('Name:'.ljust(34) + 'SteamID:'.ljust(19) + 'Link:')
+        print('Name:'.ljust(34) + 'Status:'.ljust(19) + 'SteamID:'.ljust(25) + 'Link:')
 
         for player in found_players:
-            print(f'{player["name"]}'.ljust(34) + f'{player["steam_id"]}'.ljust(19) +
+            print(f'{player["name"]}'.ljust(34) + f'{player["status"]}'.ljust(19) + f'{player["steam_id"]}'.ljust(25) +
                   self.__get_url_steam_profile_by_steam_id(player['steam_id']))
 
 
